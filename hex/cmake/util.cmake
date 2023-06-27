@@ -15,7 +15,7 @@ function(nrf_configure_sdk_values SDK_VERSION SDK_DIRECTORY)
 
     if(DEFINED ENV{GCCARMEMB_TOOLCHAIN_PATH})
         # Get gcc version
-        
+
         set(GCC_TOOLCHAIN_PATH "$ENV{GCCARMEMB_TOOLCHAIN_PATH}")
         # Environment variables are quoted, remove the quote
         string(REPLACE "\"" "" GCC_TOOLCHAIN_PATH "${GCC_TOOLCHAIN_PATH}")
@@ -290,6 +290,8 @@ function(nrf_extract_softdevice_info SOFTDEVICE_FILENAME SD_VERSION SOC_FAMILY S
                     set(_SD_ID "0x00AE")
                 elseif(_SD_API_VERSION STREQUAL "6.1.1")
                     set(_SD_ID "0x00B6")
+                elseif(_SD_API_VERSION STREQUAL "7.2.0")
+                    set(_SD_ID "0x0117")
                 else()
                     message(FATAL_ERROR "No firmware ID found for SoftDevice ${_SD_VERSION} v${_SD_API_VERSION}")
                 endif()
