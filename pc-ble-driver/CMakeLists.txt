@@ -1,12 +1,5 @@
 cmake_minimum_required(VERSION 3.11)
 
-set(NRF_BLE_DRIVER_DEFAULT_VERSION "0.0.0")
-
-if(NOT DEFINED NRF_BLE_DRIVER_VERSION)
-    message(STATUS "NRF_BLE_DRIVER_VERSION not specified, setting it to ${NRF_BLE_DRIVER_DEFAULT_VERSION}")
-    set(NRF_BLE_DRIVER_VERSION "${NRF_BLE_DRIVER_DEFAULT_VERSION}")
-endif()
-
 set(NRF_BLE_DRIVER_CONNECTIVITY_DEFAULT_VERSION "0.0.0")
 
 # Add connectivity firmware building
@@ -21,11 +14,6 @@ if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       CACHE STRING "")
 endif()
-
-project(
-    nrf-ble-driver
-    VERSION ${NRF_BLE_DRIVER_VERSION}
-)
 
 include(cmake/nrf-ble-driver.cmake)
 include(cmake/source-file-list.cmake)
