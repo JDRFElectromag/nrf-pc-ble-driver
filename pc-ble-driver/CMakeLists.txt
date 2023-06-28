@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.11)
 
-# Add connectivity firmware building
+set(NRF_BLE_DRIVER_DEFAULT_VERSION "0.0.0")
+set(NRF_BLE_DRIVER_VERSION "${NRF_BLE_DRIVER_DEFAULT_VERSION}")
+
+
 if(NOT DEFINED CONNECTIVITY_VERSION)
     message(FATAL_ERROR "CONNECTIVITY_VERSION not specified")
 endif()
