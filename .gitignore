@@ -48,3 +48,5 @@ build*/
 *.zip
 **/build
 **/*_build
+
+Makefile.posix
