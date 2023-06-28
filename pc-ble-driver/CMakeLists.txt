@@ -13,13 +13,6 @@ endif()
 include(cmake/nrf-ble-driver.cmake)
 include(cmake/source-file-list.cmake)
 
-include(TestBigEndian)
-TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
-if(IS_BIG_ENDIAN)
-    message(FATAL_ERROR "Protocol implementation does not support big endian platforms.")
-endif()
-
-
 # Set C, CPP and platform source file groups and properties
 foreach(SD_API_VER ${SD_API_VERS})
     set(LIB_${SD_API_VER}_C_SRC_FILES ${LIB_SDK_${SD_API_VER}_C_SRC_FILES})
@@ -71,15 +64,9 @@ foreach(SD_API_VER ${SD_API_VERS})
     set_property(TARGET ${NRF_BLE_DRIVER_${SD_API_VER}_OBJ_LIB} PROPERTY POSITION_INDEPENDENT_CODE 1)
 
     # actual shared and static libraries built from the same object files
-    add_library(${NRF_BLE_DRIVER_${SD_API_VER}_SHARED_LIB} SHARED $<TARGET_OBJECTS:${NRF_BLE_DRIVER_${SD_API_VER}_OBJ_LIB}>)
     add_library(${NRF_BLE_DRIVER_${SD_API_VER}_STATIC_LIB} STATIC $<TARGET_OBJECTS:${NRF_BLE_DRIVER_${SD_API_VER}_OBJ_LIB}>)
 
     string(TOLOWER ${SD_API_VER} SD_API_VER_L)
-
-    target_include_directories(
-        ${NRF_BLE_DRIVER_${SD_API_VER}_SHARED_LIB} INTERFACE
-        $<INSTALL_INTERFACE:include/${SD_API_VER_L}>
-    )
 
     target_include_directories(
         ${NRF_BLE_DRIVER_${SD_API_VER}_STATIC_LIB} INTERFACE
@@ -150,49 +137,14 @@ foreach(SD_API_VER ${SD_API_VERS})
         list(APPEND ${SD_API_VER}_CONNECTIVITY_FILES ${${SD_API_VER}_SOFTDEVICE_FILES})
     endif(COMPILE_CONNECTIVITY)
 
-    if(WIN32)
-        set_target_properties(
-            ${NRF_BLE_DRIVER_${SD_API_VER}_SHARED_LIB} PROPERTIES
-            PUBLIC_HEADER "${${SD_API_VER}_PUBLIC_HEADERS}"
-            OUTPUT_NAME "nrf-ble-driver-${SD_API_VER_L}"
-            RELEASE_POSTFIX "${MSVC_TOOLSET}-mt-${PROJECT_VERSION_MAJOR}_${PROJECT_VERSION_MINOR}_${PROJECT_VERSION_PATCH}"
-            RELWITHDEBINFO_POSTFIX "${MSVC_TOOLSET}-mt-${PROJECT_VERSION_MAJOR}_${PROJECT_VERSION_MINOR}_${PROJECT_VERSION_PATCH}"
-            MINSIZEREL_POSTFIX "${MSVC_TOOLSET}-mt-${PROJECT_VERSION_MAJOR}_${PROJECT_VERSION_MINOR}_${PROJECT_VERSION_PATCH}"
-            DEBUG_POSTFIX "${MSVC_TOOLSET}-mt-gd-${PROJECT_VERSION_MAJOR}_${PROJECT_VERSION_MINOR}_${PROJECT_VERSION_PATCH}"
-            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
-            RESOURCE "${${SD_API_VER}_CONNECTIVITY_FILES}"
-        )
+    set_target_properties(
+        ${NRF_BLE_DRIVER_${SD_API_VER}_STATIC_LIB} PROPERTIES
+        PUBLIC_HEADER "${${SD_API_VER}_PUBLIC_HEADERS}"
+        OUTPUT_NAME "nrf-ble-driver-${SD_API_VER_L}"
+        PREFIX "lib"
+        RESOURCE "${${SD_API_VER}_CONNECTIVITY_FILES}"
+    )
 
-        set_target_properties(
-            ${NRF_BLE_DRIVER_${SD_API_VER}_STATIC_LIB} PROPERTIES
-            PUBLIC_HEADER "${${SD_API_VER}_PUBLIC_HEADERS}"
-            OUTPUT_NAME "nrf-ble-driver-${SD_API_VER_L}"
-            RELEASE_POSTFIX "${MSVC_TOOLSET}-mt-static-${PROJECT_VERSION_MAJOR}_${PROJECT_VERSION_MINOR}_${PROJECT_VERSION_PATCH}"
-            RELWITHDEBINFO_POSTFIX "${MSVC_TOOLSET}-mt-static-${PROJECT_VERSION_MAJOR}_${PROJECT_VERSION_MINOR}_${PROJECT_VERSION_PATCH}"
-            MINSIZEREL_POSTFIX "${MSVC_TOOLSET}-mt-static-${PROJECT_VERSION_MAJOR}_${PROJECT_VERSION_MINOR}_${PROJECT_VERSION_PATCH}"
-            DEBUG_POSTFIX "${MSVC_TOOLSET}-mt-static-gd-${PROJECT_VERSION_MAJOR}_${PROJECT_VERSION_MINOR}_${PROJECT_VERSION_PATCH}"
-            RESOURCE "${${SD_API_VER}_CONNECTIVITY_FILES}"
-        )
-    else()
-        set_target_properties(
-            ${NRF_BLE_DRIVER_${SD_API_VER}_SHARED_LIB} PROPERTIES
-            COMPILE_DEFINITIONS "DLL_EXPORT"
-            PUBLIC_HEADER "${${SD_API_VER}_PUBLIC_HEADERS}"
-            OUTPUT_NAME "nrf-ble-driver-${SD_API_VER_L}"
-            VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}"
-            SOVERSION "${PROJECT_VERSION_MAJOR}"
-            PREFIX "lib"
-            RESOURCE "${${SD_API_VER}_CONNECTIVITY_FILES}"
-        )
-
-        set_target_properties(
-            ${NRF_BLE_DRIVER_${SD_API_VER}_STATIC_LIB} PROPERTIES
-            PUBLIC_HEADER "${${SD_API_VER}_PUBLIC_HEADERS}"
-            OUTPUT_NAME "nrf-ble-driver-${SD_API_VER_L}"
-            PREFIX "lib"
-            RESOURCE "${${SD_API_VER}_CONNECTIVITY_FILES}"
-        )
-    endif()
 endforeach(SD_API_VER)
 
 # Set common include directories
@@ -248,13 +200,10 @@ foreach(SD_API_VER ${SD_API_VERS})
     if(WIN32)
     elseif(APPLE)
         target_link_libraries(${NRF_BLE_DRIVER_${SD_API_VER}_STATIC_LIB} PRIVATE "-framework CoreFoundation" "-framework IOKit")
-        target_link_libraries(${NRF_BLE_DRIVER_${SD_API_VER}_SHARED_LIB} PRIVATE "-framework CoreFoundation" "-framework IOKit")
         set_property(TARGET ${NRF_BLE_DRIVER_${SD_API_VER}_STATIC_LIB} PROPERTY MACOSX_RPATH ON)
-        set_property(TARGET ${NRF_BLE_DRIVER_${SD_API_VER}_SHARED_LIB} PROPERTY MACOSX_RPATH ON)
     else()
         # Assume Linux
         target_link_libraries(${NRF_BLE_DRIVER_${SD_API_VER}_STATIC_LIB} PRIVATE "udev" "pthread")
-        target_link_libraries(${NRF_BLE_DRIVER_${SD_API_VER}_SHARED_LIB} PRIVATE "udev" "pthread")
     endif()
 endforeach(SD_API_VER)
 
