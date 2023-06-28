@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.11)
 
-project("fw-nrf-dfu")
-
 #Define toolchain to by pass dependencies bootstrapping
 set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_arm.cmake"
-    CACHE PATH "CMAKETOOLCHAINFILE")
+    CACHE INTERNAL "CMAKETOOLCHAINFILE")
+
+project("fw-nrf-dfu")
 
 #Compilation parameters
 set(COMPILE_CONNECTIVITY true)
