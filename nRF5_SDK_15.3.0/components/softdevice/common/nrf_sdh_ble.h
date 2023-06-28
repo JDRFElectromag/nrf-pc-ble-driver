@@ -184,6 +184,13 @@ ret_code_t nrf_sdh_ble_enable(uint32_t * p_app_ram_start);
 ret_code_t nrf_sdh_ble_enable(ble_enable_params_t * p_ble_enable_params, uint32_t * p_app_ram_start);
 #endif
 
+/**
+ * @brief Register the enable stack observer.
+ * Called each time the BLE stack is enabled successfully.
+ */
+typedef void (*nrfSdhBle_observer_t)(void);
+void nrfSdhBle_registerEnableObserver(nrfSdhBle_observer_t obs);
+
 #ifdef __cplusplus
 }
 #endif

@@ -218,7 +218,28 @@ static uint32_t ram_end_address_get(void)
     return RAM_START + ram_total_size;
 }
 
+/*******************************************************************************
+* --- Stack Enable Obsever routines ---
+*******************************************************************************/
+static nrfSdhBle_observer_t enableStackObs = NULL;
+static void onBleStackEnabled(void)
+{
+    volatile const nrfSdhBle_observer_t obs = enableStackObs; /*Snapshot*/
+    if (obs) {
+        obs();
+    }
+}
+
+void nrfSdhBle_registerEnableObserver(nrfSdhBle_observer_t obs)
+{
+    enableStackObs = obs;
+}
+/*******************************************************************************
+* ----
+*******************************************************************************/
+
 #if defined(NRF_SD_BLE_API_VERSION) && NRF_SD_BLE_API_VERSION > 4
+/*We have to attach the nrf21540 after this runs*/
 ret_code_t nrf_sdh_ble_enable(uint32_t * const p_app_ram_start)
 {
     // Start of RAM, obtained from linker symbol.
@@ -249,6 +270,7 @@ ret_code_t nrf_sdh_ble_enable(uint32_t * const p_app_ram_start)
     if (ret_code == NRF_SUCCESS)
     {
         m_stack_is_enabled = true;
+        onBleStackEnabled();
     }
     else
     {
@@ -288,6 +310,7 @@ ret_code_t nrf_sdh_ble_enable(ble_enable_params_t * p_ble_enable_params, uint32_
     if (ret_code == NRF_SUCCESS)
     {
         m_stack_is_enabled = true;
+        onBleStackEnabled();
     }
     else
     {
