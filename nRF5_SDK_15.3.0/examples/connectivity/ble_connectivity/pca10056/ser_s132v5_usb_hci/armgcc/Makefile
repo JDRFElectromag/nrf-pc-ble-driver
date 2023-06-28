@@ -179,8 +179,14 @@ OPT = -Os -g3
 # Uncomment the line below to enable link time optimization
 #OPT += -flto
 
+# Logging flags
+LOGGING_FLAGS += -DNRF_LOG_ENABLED=1
+LOGGING_FLAGS += -DNRF_LOG_BACKEND_RTT_ENABLED=1
+LOGGING_FLAGS += -DNRF_LOG_BACKEND_UART_ENABLED=0
+
 # C flags common to all targets
 CFLAGS += $(OPT)
+CFLAGS += $(LOGGING_FLAGS)
 CFLAGS += -DAPP_TIMER_V2
 CFLAGS += -DAPP_TIMER_V2_RTC1_ENABLED
 CFLAGS += -DBLE_STACK_SUPPORT_REQD
@@ -206,8 +212,10 @@ CFLAGS += -fno-builtin -fshort-enums
 
 # C++ flags common to all targets
 CXXFLAGS += $(OPT)
+CXXFLAGS += $(LOGGING_FLAGS)
 
 # Assembler flags common to all targets
+ASMFLAGS += $(LOGGING_FLAGS)
 ASMFLAGS += -g3
 ASMFLAGS += -mcpu=cortex-m4
 ASMFLAGS += -mthumb -mabi=aapcs
