@@ -45,6 +45,7 @@ build*/
 
 
 *.hex
+!**/softdevice/**/*.hex
 *.zip
 **/build
 **/*_build
