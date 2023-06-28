@@ -313,16 +313,9 @@ function(nrf_create_compile_targets CONNECTIVITY_ARTIFACTS)
     set(_CONNECTIVITY_SDK_VERSION_11_ARTIFACTS "")
     set(_CONNECTIVITY_SDK_VERSION_15_ARTIFACTS "")
 
-    set(SDK_V15_PATH)
-
-    nrf_prepare_sdk(
-        SDK_VERSION 15
-        URLS "https://developer.nordicsemi.com/nRF5_SDK/nRF5_SDK_v15.x.x/nRF5_SDK_15.3.0_59ac345.zip"
-        FILENAME "nRF5_SDK_15.3.0_59ac345.zip"
-        SHA512 7cdf1652e828b7c5266c21e1a12e16c90f51213130268e7138950c070c2271d357410a103427e0f67dc56816a8cf6f69df93a6462e2b5e18d6be0a9bb465484f
-        PATCH_FILES "${CMAKE_CURRENT_LIST_DIR}/hex/nRF5_SDK_15.3.0_connectivity.patch"
-        SDK_PATH SDK_V15_PATH
-    )
+    if (NOT EXISTS ${SDK_V15_PATH})
+        message(FATAL_ERROR "Missing SDK_V15_PATH")
+    endif()
 
     nrf_create_connectivity_compile_targets(
         SDK_VERSION 15
