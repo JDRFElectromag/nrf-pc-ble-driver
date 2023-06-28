@@ -80,7 +80,10 @@ void app_error_fault_handler(uint32_t id, uint32_t pc, uint32_t info)
     // disable INTs
     CRITICAL_REGION_ENTER();
 
-    NRF_LOG_ERROR("Fatal error");
+    const assert_info_t *const assertInfo = (assert_info_t *)info;
+
+
+    NRF_LOG_ERROR("Fatal error: %s:%u", assertInfo->p_file_name, assertInfo->line_num);
     NRF_LOG_FINAL_FLUSH();
 
     #if LEDS_NUMBER > 0
