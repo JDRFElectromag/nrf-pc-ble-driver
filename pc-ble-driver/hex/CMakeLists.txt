@@ -313,12 +313,17 @@ function(nrf_create_compile_targets CONNECTIVITY_ARTIFACTS)
     set(_CONNECTIVITY_SDK_VERSION_11_ARTIFACTS "")
     set(_CONNECTIVITY_SDK_VERSION_15_ARTIFACTS "")
 
+    #Enforce SDK 15
+    set(SDK_VERSION 15)
     if (NOT EXISTS ${SDK_V15_PATH})
         message(FATAL_ERROR "Missing SDK_V15_PATH")
     endif()
 
+    #Setup SDK so CMAKE can call it's makefiles
+    nrf_configure_sdk_values("${SDK_VERSION}" "${SDK_V15_PATH}")
+
     nrf_create_connectivity_compile_targets(
-        SDK_VERSION 15
+        SDK_VERSION "${SDK_VERSION}"
         SDK_ROOT "${SDK_V15_PATH}"
         PROJECT_DIRECTORY "examples/connectivity/ble_connectivity"
         VERSION "${CONNECTIVITY_VERSION}"
