@@ -64,6 +64,7 @@
 #include "app_timer.h"
 #include "ser_phy_debug_comm.h"
 #include "ser_config.h"
+#include "app_timer.h"
 
 #if defined(NRF_DFU_TRIGGER_USB_INTERFACE_NUM) && defined(QSPI_ENABLED)
 #define BOARD_DETECTION 1
@@ -78,7 +79,79 @@
 #define PCA10059_PIN_RESET 19
 #endif
 
+/*Macro to log and flush. Use this before entering the super loop*/
+#define NRF_LOG_INFO_FLUSH(arg) \
+do { \
+    NRF_LOG_INFO(arg); \
+    NRF_LOG_INTERNAL_FLUSH(); \
+} while (0)
 
+/* ****************************************************************************
+ * --- nrf21540 routines ---
+ ******************************************************************************/
+#if HAS_NRF21540
+#include "nrf21540.h"
+#endif
+static void nrf21540_initialize(void)
+{
+#if HAS_NRF21540
+    nrf21540_init();
+    nrf21540_enablePower(true);
+    NRF_LOG_INFO("%s", __FUNCTION__);
+#endif
+}
+
+static void nrf21540_onBleStackEnabled(void)
+{
+#if HAS_NRF21540
+    nrf21540_bleAttach();
+    NRF_LOG_INFO("%s", __FUNCTION__);
+#endif
+}
+
+/* ****************************************************************************
+ * --- LED routines ---
+ ******************************************************************************/
+static inline void led_Gpioinit(void)
+{
+    const uint32_t pins[] = {
+        LED_1,
+    };
+
+    const uint32_t *pin = pins;
+    size_t i = ARRAY_SIZE(pins);
+    while (i--) {
+        nrf_gpio_cfg_output(*pin);
+        nrf_gpio_pin_write(*pin, LEDS_ACTIVE_STATE);
+        pin++;
+    }
+}
+
+static inline void led_heartBeatStep(void *arg)
+{
+    nrf_gpio_pin_toggle(LED_1);
+}
+
+static inline void led_timerInit(void)
+{
+    APP_TIMER_DEF(timer);
+    app_timer_create(&timer, APP_TIMER_MODE_REPEATED, led_heartBeatStep);
+    app_timer_start(timer, APP_TIMER_TICKS(1000), NULL);
+}
+
+/* ****************************************************************************
+ * --- Timer Routines ---
+ ******************************************************************************/
+static inline void timerInit(void)
+{
+    const ret_code_t rc = app_timer_init();
+    ASSERT(NRFX_SUCCESS == rc);
+    app_timer_resume();
+}
+
+/* ****************************************************************************
+ * --- ---
+ ******************************************************************************/
 #if defined(APP_USBD_ENABLED) && APP_USBD_ENABLED
 #include "app_usbd_serial_num.h"
 #include "app_usbd.h"
@@ -131,7 +204,7 @@ static void usbd_init(void)
 
 static void usbd_enable(void)
 {
-    APP_ERROR_CHECK(app_usbd_power_events_enable()); 
+    APP_ERROR_CHECK(app_usbd_power_events_enable());
 
     /* Process USB events until USB is started. This is related to the fact that
      * current version of softdevice does not handle USB POWER events. */
@@ -163,11 +236,11 @@ typedef struct __attribute__((packed))
         uint32_t    baud_rate;                  /* UART transport baud rate */
 } version_info_t;
 #if defined ( __CC_ARM )
-static const version_info_t version_info __attribute__((at(0x50000))) = 
+static const version_info_t version_info __attribute__((at(0x50000))) =
 #elif defined ( __GNUC__ ) || defined ( __SES_ARM )
-volatile static const version_info_t version_info  __attribute__ ((section(".connectivity_version_info"))) = 
+volatile static const version_info_t version_info  __attribute__ ((section(".connectivity_version_info"))) =
 #elif defined ( __ICCARM__ )
-__root    const version_info_t version_info @ 0x50000 = 
+__root    const version_info_t version_info @ 0x50000 =
 #endif
 {
     .magic_number       = 0x46D8A517,
@@ -233,7 +306,7 @@ void pin_to_default(uint8_t pin)
 /**@brief Main function of the connectivity application. */
 int main(void)
 {
-    
+
 
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
@@ -245,7 +318,13 @@ int main(void)
 
     NRF_LOG_DEFAULT_BACKENDS_INIT();
 
-    NRF_LOG_INFO("BLE connectivity started");
+    NRF_LOG_INFO_FLUSH("BLE connectivity started");
+
+    timerInit();
+    led_Gpioinit();
+    led_timerInit();
+    nrf21540_initialize();
+    nrfSdhBle_registerEnableObserver(nrf21540_onBleStackEnabled);
 
 #if BOARD_DETECTION
     uint32_t pin_reset = PCA10059_PIN_RESET;
@@ -316,13 +395,12 @@ int main(void)
     APP_ERROR_CHECK(err_code);
 
 #if defined(APP_USBD_ENABLED) && APP_USBD_ENABLED
-    usbd_enable();
+    NRF_LOG_INFO_FLUSH("Awaiting USB connection...");
+    usbd_enable(); /*Spin loop until a USB is plugged into nRF-USB connector*/
+    NRF_LOG_INFO_FLUSH("USB connected");
 #endif
 
     err_code = nrf_sdh_enable_request();
-    APP_ERROR_CHECK(err_code);
-
-    err_code = app_timer_init();
     APP_ERROR_CHECK(err_code);
 
     ser_conn_on_no_mem_handler_set(on_idle);
