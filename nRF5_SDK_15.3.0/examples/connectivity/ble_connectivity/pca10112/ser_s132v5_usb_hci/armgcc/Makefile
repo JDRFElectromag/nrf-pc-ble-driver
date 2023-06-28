@@ -115,6 +115,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh.c \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh_ble.c \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh_soc.c \
+  $(SDK_ROOT)/components/drivers_ext/nrf21540_jdrf/src/nrf21540.c \
 
 # Include folders common to all targets
 INC_FOLDERS += \
@@ -170,6 +171,7 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/block_dev \
   $(SDK_ROOT)/external/fprintf \
   $(SDK_ROOT)/components/libraries/log/src \
+  $(SDK_ROOT)/components/drivers_ext/nrf21540_jdrf/include \
 
 # Libraries common to all targets
 LIB_FILES += \
@@ -179,12 +181,18 @@ OPT = -Os -g3
 # Uncomment the line below to enable link time optimization
 #OPT += -flto
 
+# Logging flags
+LOGGING_FLAGS += -DNRF_LOG_ENABLED=1
+LOGGING_FLAGS += -DNRF_LOG_BACKEND_RTT_ENABLED=1
+LOGGING_FLAGS += -DNRF_LOG_BACKEND_UART_ENABLED=0
+
 # C flags common to all targets
 CFLAGS += $(OPT)
+CFLAGS += $(LOGGING_FLAGS)
 CFLAGS += -DAPP_TIMER_V2
 CFLAGS += -DAPP_TIMER_V2_RTC1_ENABLED
 CFLAGS += -DBLE_STACK_SUPPORT_REQD
-CFLAGS += -DBOARD_PCA10056
+CFLAGS += -DBOARD_PCA10112
 CFLAGS += -DBSP_DEFINES_ONLY
 CFLAGS += -DCONFIG_GPIO_AS_PINRESET
 CFLAGS += -DFLOAT_ABI_HARD
@@ -206,8 +214,10 @@ CFLAGS += -fno-builtin -fshort-enums
 
 # C++ flags common to all targets
 CXXFLAGS += $(OPT)
+CXXFLAGS += $(LOGGING_FLAGS)
 
 # Assembler flags common to all targets
+ASMFLAGS += $(LOGGING_FLAGS)
 ASMFLAGS += -g3
 ASMFLAGS += -mcpu=cortex-m4
 ASMFLAGS += -mthumb -mabi=aapcs
@@ -215,7 +225,7 @@ ASMFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 ASMFLAGS += -DAPP_TIMER_V2
 ASMFLAGS += -DAPP_TIMER_V2_RTC1_ENABLED
 ASMFLAGS += -DBLE_STACK_SUPPORT_REQD
-ASMFLAGS += -DBOARD_PCA10056
+ASMFLAGS += -DBOARD_PCA10112
 ASMFLAGS += -DBSP_DEFINES_ONLY
 ASMFLAGS += -DCONFIG_GPIO_AS_PINRESET
 ASMFLAGS += -DFLOAT_ABI_HARD
