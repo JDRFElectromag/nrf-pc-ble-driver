@@ -15,7 +15,7 @@ function(nrf_configure_sdk_values SDK_VERSION SDK_DIRECTORY)
 
     if(DEFINED ENV{GCCARMEMB_TOOLCHAIN_PATH})
         # Get gcc version
-        
+
         set(GCC_TOOLCHAIN_PATH "$ENV{GCCARMEMB_TOOLCHAIN_PATH}")
         # Environment variables are quoted, remove the quote
         string(REPLACE "\"" "" GCC_TOOLCHAIN_PATH "${GCC_TOOLCHAIN_PATH}")
@@ -44,77 +44,15 @@ function(nrf_configure_sdk_values SDK_VERSION SDK_DIRECTORY)
             return()
         endif()
 
-        set(ARM_GCC_TOOLCHAIN_VERSION "7.3.1")
-
-        if(NOT GCC_VERSION VERSION_EQUAL "${ARM_GCC_TOOLCHAIN_VERSION}")
-            message(FATAL_ERROR "Required armgcc toolchain version not provided. Needs to be ${ARM_GCC_TOOLCHAIN_VERSION}.")
-        endif()
-
         set(TOOLCHAIN_PATH "${SDK_DIRECTORY}/components/toolchain/gcc")
         if(EXISTS "${TOOLCHAIN_PATH}")
-            if(WIN32)
-                set(MAKEFILE "${TOOLCHAIN_PATH}/Makefile.windows")
-                if(EXISTS "${MAKEFILE}")
-                    message(STATUS "Altering Makefile using armgcc for Windows")
-                else()
-                    message(STATUS "Makefile not found: ${MAKEFILE}")
-                    set(MAKEFILE)
-                endif()
+            set(MAKEFILE_CONTENT "")
+            string(APPEND MAKEFILE_CONTENT "GNU_INSTALL_ROOT = ${GCC_TOOLCHAIN_PATH}\n")
+            string(APPEND MAKEFILE_CONTENT "GNU_VERSION = ${GCC_VERSION}\n")
+            string(APPEND MAKEFILE_CONTENT "GNU_PREFIX = arm-none-eabi\n")
 
-                set(MAKEFILE_COMMON "${TOOLCHAIN_PATH}/Makefile.common")
-
-                if(EXISTS "${MAKEFILE_COMMON}")
-                    message(STATUS "Replacing \"rm -rf\" with \"cmake -E remove_directory\" on Windows")
-
-                    file(READ "${MAKEFILE_COMMON}" MAKEFILE_CONTENT)
-                    file(WRITE "${MAKEFILE_COMMON}.pristine" "${MAKEFILE_CONTENT}")
-
-                    string(
-                        REPLACE "RM := rm -rf" "RM := \"${CMAKE_COMMAND}\" -E remove_directory"
-                        MAKEFILE_CONTENT_NEW "${MAKEFILE_CONTENT}"
-                    )
-
-                    set(MAKEFILE_CONTENT "${MAKEFILE_CONTENT_NEW}")
-                    file(WRITE "${MAKEFILE_COMMON}" "${MAKEFILE_CONTENT}")
-                else()
-                    message(STATUS "Makefile.common not found: ${MAKEFILE}")
-                endif()
-            else()
-                # Assume POSIX if not WIN32
-                set(MAKEFILE "${TOOLCHAIN_PATH}/Makefile.posix")
-                if(EXISTS "${MAKEFILE}")
-                    message(STATUS "Altering Makefile using armgcc for POSIX .")
-                else()
-                    message(STATUS "Makefile not found: ${MAKEFILE}")
-                    set(MAKEFILE)
-                endif()
-            endif()
-
-            if(MAKEFILE)
-                file(READ "${MAKEFILE}" MAKEFILE_CONTENT)
-                file(WRITE "${MAKEFILE}.pristine" "${MAKEFILE_CONTENT}")
-
-                string(REGEX MATCH ";" LIST_SEPARATOR_FOUND "${MAKEFILE_CONTENT}")
-                if(LIST_SEPARATOR_FOUND STREQUAL ";")
-                    message(FATAL_ERROR "${MAKEFILE} contains ; which is the list split operator, cannot continue.")
-                endif()
-
-                # Make the file into a list since the ^$ expressions will not work
-                string(REGEX REPLACE "\r?\n" ";" MAKEFILE_LINES "${MAKEFILE_CONTENT}")
-                set(MAKEFILE_CONTENT_NEW)
-
-                foreach(LINE ${MAKEFILE_LINES})
-                    #message(STATUS "L:${LINE}")
-                    string(REGEX REPLACE "^(GNU_INSTALL_ROOT [\\?:]= ).*$" "\\1${GCC_TOOLCHAIN_PATH}" MAKEFILE_LINE "${LINE}")
-                    string(REGEX REPLACE "^(GNU_VERSION [\\?:]= ).*$" "\\1${GCC_VERSION}" MAKEFILE_LINE "${MAKEFILE_LINE}")
-                    #message(STATUS "M:${MAKEFILE_LINE}")
-                    string(APPEND MAKEFILE_CONTENT_NEW "${MAKEFILE_LINE}\n")
-                endforeach()
-
-                set(MAKEFILE_CONTENT "${MAKEFILE_CONTENT_NEW}")
-                file(WRITE "${MAKEFILE}" "${MAKEFILE_CONTENT}")
-                #message(STATUS "Makefile content after change: ${MAKEFILE_CONTENT}")
-            endif()
+            set(MAKEFILE "${TOOLCHAIN_PATH}/Makefile.posix")
+            file(WRITE "${MAKEFILE}" "${MAKEFILE_CONTENT}")
         endif()
     endif()
 endfunction()

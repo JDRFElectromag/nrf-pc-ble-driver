@@ -1,0 +1,65 @@
+message(STATUS "Loading Cross Compiler Toolchain")
+include (CMakeForceCompiler)
+
+if(NOT DEFINED ARM_TOOLCHAIN_ROOT_PATH)  #Check cache
+    if(NOT DEFINED ENV{ARM_TOOLCHAIN_ROOT_PATH}) #check environment
+        message(FATAL_ERROR "\"ARM_TOOLCHAIN_ROOT_PATH\" Not Found.")
+    endif()
+    set(ARM_TOOLCHAIN_ROOT_PATH $ENV{ARM_TOOLCHAIN_ROOT_PATH})
+endif()
+
+set(TOOLCHAIN_BIN_DIR ${ARM_TOOLCHAIN_ROOT_PATH}/bin/)
+set(CMAKE_SYSTEM_NAME Generic)
+set(CMAKE_SYSTEM_PROCESSOR ARM)
+set(TOOLCHAIN_PREFIX arm-none-eabi-)
+
+#####################################
+# Find Toolchain
+#####################################
+find_program(CMAKE_C_COMPILER ${TOOLCHAIN_BIN_DIR}${TOOLCHAIN_PREFIX}gcc)
+if(NOT CMAKE_C_COMPILER)
+	message(FATAL_ERROR "Could not find ${TOOLCHAIN_BIN_DIR}${TOOLCHAIN_PREFIX}gcc")
+endif()
+
+find_program(CMAKE_CXX_COMPILER ${TOOLCHAIN_BIN_DIR}${TOOLCHAIN_PREFIX}g++)
+if(NOT CMAKE_CXX_COMPILER)
+	message(FATAL_ERROR "Could not find ${TOOLCHAIN_BIN_DIR}${TOOLCHAIN_PREFIX}g++")
+endif()
+
+find_program(CMAKE_ASM_COMPILER ${TOOLCHAIN_BIN_DIR}${TOOLCHAIN_PREFIX}as)
+if(NOT CMAKE_ASM_COMPILER)
+	message(FATAL_ERROR "Could not find ${TOOLCHAIN_BIN_DIR}${TOOLCHAIN_PREFIX}as")
+endif()
+
+find_program(CMAKE_OBJCOPY ${TOOLCHAIN_BIN_DIR}${TOOLCHAIN_PREFIX}objcopy)
+if(NOT CMAKE_OBJCOPY)
+	message(FATAL_ERROR "Could not find ${TOOLCHAIN_BIN_DIR}${TOOLCHAIN_PREFIX}objcopy")
+endif()
+
+find_program(CMAKE_OBJDUMP ${TOOLCHAIN_BIN_DIR}${TOOLCHAIN_PREFIX}objdump)
+if(NOT CMAKE_OBJDUMP)
+	message(FATAL_ERROR "Could not find ${TOOLCHAIN_BIN_DIR}${TOOLCHAIN_PREFIX}objdump")
+endif()
+
+find_program(CMAKE_SIZE ${TOOLCHAIN_BIN_DIR}${TOOLCHAIN_PREFIX}size)
+if(NOT CMAKE_SIZE)
+	message(FATAL_ERROR "Could not find ${TOOLCHAIN_BIN_DIR}${TOOLCHAIN_PREFIX}size")
+endif()
+
+find_program(CMAKE_STRIP ${TOOLCHAIN_BIN_DIR}${TOOLCHAIN_PREFIX}strip)
+if(NOT CMAKE_STRIP)
+       message(FATAL_ERROR "Could not find ${TOOLCHAIN_BIN_DIR}${TOOLCHAIN_PREFIX}strip")
+endif()
+
+#####################################
+# Setup Usage
+#####################################
+set(CMAKE_C_COMPILER_WORKS ON)
+set(CMAKE_CXX_COMPILER_WORKS 1)
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+
+#Required by CMake file in pc-ble-driver
+set(GNUARMEMB_TOOLCHAIN_PATH $ENV{ARM_TOOLCHAIN_ROOT_PATH} CACHE PATH "GNUARMEMBTOOLCHAINPATH"))
+set(GCCARMEMB_TOOLCHAIN_PATH ${GNUARMEMB_TOOLCHAIN_PATH} CACHE PATH "GCCARMEMBTOOLCHAINPATH"))
