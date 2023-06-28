@@ -7,10 +7,18 @@ MEMORY
 {
   FLASH (rx) : ORIGIN = 0x26000, LENGTH = 0xda000
   RAM (rwx) :  ORIGIN = 0x2001ad58, LENGTH = 0x252a8
+  connectivity_version_info (r) : ORIGIN = 0x50000, LENGTH = 0x18
 }
 
 SECTIONS
 {
+  . = ALIGN(4);
+  .connectivity_version_info :
+  {
+    PROVIDE(__start_connectivity_version_info = .);
+    KEEP(*(SORT(.connectivity_version_info*)))
+    PROVIDE(__stop_connectivity_version_info = .);
+  } > connectivity_version_info
 }
 
 SECTIONS
@@ -63,12 +71,6 @@ SECTIONS
     KEEP(*(SORT(.log_const_data*)))
     PROVIDE(__stop_log_const_data = .);
   } > FLASH
-  .sdh_req_observers :
-  {
-    PROVIDE(__start_sdh_req_observers = .);
-    KEEP(*(SORT(.sdh_req_observers*)))
-    PROVIDE(__stop_sdh_req_observers = .);
-  } > FLASH
   .sdh_state_observers :
   {
     PROVIDE(__start_sdh_state_observers = .);
@@ -80,6 +82,12 @@ SECTIONS
     PROVIDE(__start_sdh_stack_observers = .);
     KEEP(*(SORT(.sdh_stack_observers*)))
     PROVIDE(__stop_sdh_stack_observers = .);
+  } > FLASH
+  .sdh_req_observers :
+  {
+    PROVIDE(__start_sdh_req_observers = .);
+    KEEP(*(SORT(.sdh_req_observers*)))
+    PROVIDE(__stop_sdh_req_observers = .);
   } > FLASH
   .log_backends :
   {

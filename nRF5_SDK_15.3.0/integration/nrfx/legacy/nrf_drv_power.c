@@ -47,6 +47,14 @@
 #include "nrf_sdh_soc.h"
 #endif
 
+#if defined(SOFTDEVICE_PRESENT)
+#if defined(NRF_SD_BLE_API_VERSION) && NRF_SD_BLE_API_VERSION < 6
+#define POWER_USB_SD_API 0
+#else
+#define POWER_USB_SD_API 1
+#endif
+#endif
+
 #include <app_util.h>
 
 // The structure with default configuration data.
@@ -220,7 +228,7 @@ void nrf_drv_power_sleepevt_uninit(void)
 
 #if NRF_POWER_HAS_USBREG
 
-#ifdef SOFTDEVICE_PRESENT
+#if POWER_USB_SD_API
 static ret_code_t nrf_drv_power_sd_usbevt_enable(bool enable)
 {
     ret_code_t err_code;
@@ -248,7 +256,7 @@ ret_code_t nrf_drv_power_usbevt_init(nrf_drv_power_usbevt_config_t const * p_con
 {
     nrf_drv_power_usbevt_uninit();
     nrfx_power_usbevt_init(p_config);
-#ifdef SOFTDEVICE_PRESENT
+#if POWER_USB_SD_API
     if (nrf_sdh_is_enabled())
     {
         ret_code_t err_code = nrf_drv_power_sd_usbevt_enable(true);
@@ -283,7 +291,7 @@ ret_code_t nrf_drv_power_usbevt_init(nrf_drv_power_usbevt_config_t const * p_con
 
 void nrf_drv_power_usbevt_uninit(void)
 {
-#ifdef SOFTDEVICE_PRESENT
+#if POWER_USB_SD_API
     CRITICAL_REGION_ENTER();
     if (nrf_sdh_is_enabled())
     {
@@ -296,7 +304,7 @@ void nrf_drv_power_usbevt_uninit(void)
     {
         nrfx_power_usbevt_disable();
     }
-#ifdef SOFTDEVICE_PRESENT
+#if POWER_USB_SD_API
     CRITICAL_REGION_EXIT();
 #endif
     nrfx_power_usbevt_uninit();
@@ -326,7 +334,7 @@ static void nrf_drv_power_sdh_soc_evt_handler(uint32_t evt_id, void * p_context)
         pofwarn_handler();
     }
 
-#if NRF_POWER_HAS_USBREG
+#if NRF_POWER_HAS_USBREG && POWER_USB_SD_API
     nrfx_power_usb_event_handler_t usbevt_handler = nrfx_power_usb_handler_get();
     if (usbevt_handler != NULL)
     {
@@ -364,7 +372,7 @@ static void nrf_drv_power_on_sd_enable(void)
     }
     CRITICAL_REGION_EXIT();
 
-#if NRF_POWER_HAS_USBREG
+#if NRF_POWER_HAS_USBREG && POWER_USB_SD_API
     if (nrfx_power_usb_handler_get() != NULL)
     {
         ret_code_t err_code = nrf_drv_power_sd_usbevt_enable(true);

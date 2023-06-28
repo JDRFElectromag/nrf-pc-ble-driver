@@ -50,10 +50,6 @@
 #include "nrf_log.h"
 NRF_LOG_MODULE_REGISTER();
 
-#ifndef BSP_SELF_PINRESET_PIN
-#error "This module is intended to be used with boards that have the GP pin shortened with the RESET pin."
-#endif
-
 /**
  * @brief Enable power USB detection.
  *
@@ -71,6 +67,7 @@ NRF_LOG_MODULE_REGISTER();
 
 static uint8_t                                m_version_string[] = APP_NAME " " VERSION_STRING; ///< Human-readable version string.
 static app_usbd_nrf_dfu_trigger_nordic_info_t m_dfu_info;                                       ///< Struct with various information about the current firmware.
+static uint32_t m_pin_reset;
 
 static void dfu_trigger_evt_handler(app_usbd_class_inst_t        const *  p_inst,
                                     app_usbd_nrf_dfu_trigger_user_event_t event)
@@ -82,8 +79,8 @@ static void dfu_trigger_evt_handler(app_usbd_class_inst_t        const *  p_inst
         case APP_USBD_NRF_DFU_TRIGGER_USER_EVT_DETACH:
             NRF_LOG_INFO("DFU Detach request received. Triggering a pin reset.");
             NRF_LOG_FINAL_FLUSH();
-            nrf_gpio_cfg_output(BSP_SELF_PINRESET_PIN);
-            nrf_gpio_pin_clear(BSP_SELF_PINRESET_PIN);
+            nrf_gpio_cfg_output(m_pin_reset);
+            nrf_gpio_pin_clear(m_pin_reset);
             break;
         default:
             break;
@@ -173,7 +170,7 @@ static void usbd_evt_handler(app_usbd_internal_evt_t const * const p_event)
 }
 #endif
 
-ret_code_t nrf_dfu_trigger_usb_init(void)
+ret_code_t nrf_dfu_trigger_usb_init(uint32_t pin_reset)
 {
     ret_code_t  ret;
     static bool initialized = false;
@@ -183,6 +180,7 @@ ret_code_t nrf_dfu_trigger_usb_init(void)
         return NRF_SUCCESS;
     }
 
+    m_pin_reset               = pin_reset;
     m_dfu_info.wAddress       = CODE_START;
     m_dfu_info.wFirmwareSize  = CODE_SIZE;
     m_dfu_info.wVersionMajor  = APP_VERSION_MAJOR;

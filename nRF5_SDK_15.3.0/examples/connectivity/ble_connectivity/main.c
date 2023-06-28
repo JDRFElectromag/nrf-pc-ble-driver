@@ -57,22 +57,33 @@
 #include "ser_conn_handlers.h"
 #include "boards.h"
 #include "nrf_drv_clock.h"
-
+#include "app_timer.h"
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 #include "app_timer.h"
 #include "ser_phy_debug_comm.h"
+#include "ser_config.h"
+
+#if defined(NRF_DFU_TRIGGER_USB_INTERFACE_NUM) && defined(QSPI_ENABLED)
+#define BOARD_DETECTION 1
+#else
+#define BOARD_DETECTION 0
+#endif
+
+#if BOARD_DETECTION
+#include "nrf_dfu_trigger_usb.h"
+#include "nrf_drv_qspi.h"
+#define PCA10056_PIN_RESET 24
+#define PCA10059_PIN_RESET 19
+#endif
+
 
 #if defined(APP_USBD_ENABLED) && APP_USBD_ENABLED
 #include "app_usbd_serial_num.h"
-#ifdef BOARD_PCA10059
-#include "nrf_dfu_trigger_usb.h"
-#endif
 #include "app_usbd.h"
 
 static volatile bool m_usb_started;
-
 
 static void usbd_user_evt_handler(app_usbd_event_type_t event)
 {
@@ -120,9 +131,6 @@ static void usbd_init(void)
 
 static void usbd_enable(void)
 {
-#ifdef BOARD_PCA10059
-    APP_ERROR_CHECK(nrf_dfu_trigger_usb_init());
-#endif
     APP_ERROR_CHECK(app_usbd_power_events_enable()); 
 
     /* Process USB events until USB is started. This is related to the fact that
@@ -137,6 +145,44 @@ static void usbd_enable(void)
 
 }
 #endif //APP_USBD_ENABLED
+
+
+typedef struct __attribute__((packed))
+{
+        uint32_t    magic_number;               /* Magic number to verify the presence of this structure in memory */
+        uint32_t    struct_version     : 8;     /* Version of this struct format */
+        uint32_t    rfu0               : 24;    /* Reserved for future use, shall be 0xFFFFFF */
+        uint32_t    revision_hash;              /* Unique revision identifier */
+        uint32_t    version_major      : 8;     /* Major version number */
+        uint32_t    version_minor      : 8;     /* Minor version number */
+        uint32_t    version_patch      : 8;     /* Patch version number */
+        uint32_t    rfu1               : 8;     /* Reserved for future use, shall be 0xFF */
+        uint32_t    sd_ble_api_version : 8;     /* SoftDevice BLE API version number */
+        uint32_t    transport_type     : 8;     /* Connectivity transport type, 1 = UART HCI */
+        uint32_t    rfu2               : 16;    /* Reserved for future use, shall be 0xFFFF */
+        uint32_t    baud_rate;                  /* UART transport baud rate */
+} version_info_t;
+#if defined ( __CC_ARM )
+static const version_info_t version_info __attribute__((at(0x50000))) = 
+#elif defined ( __GNUC__ ) || defined ( __SES_ARM )
+volatile static const version_info_t version_info  __attribute__ ((section(".connectivity_version_info"))) = 
+#elif defined ( __ICCARM__ )
+__root    const version_info_t version_info @ 0x50000 = 
+#endif
+{
+    .magic_number       = 0x46D8A517,
+    .struct_version     = 2,
+    .rfu0               = 0xFFFFFF,
+    .revision_hash      = 0,
+    .version_major      = APP_VERSION_MAJOR,
+    .version_minor      = APP_VERSION_MINOR,
+    .version_patch      = APP_VERSION_PATCH,
+    .rfu1               = 0xFF,
+    .sd_ble_api_version = NRF_SD_BLE_API_VERSION,
+    .transport_type     = 1,
+    .rfu2               = 0xFFFF,
+    .baud_rate          = SER_PHY_UART_BAUDRATE_VAL,
+};
 
 static void on_idle(void)
 {
@@ -169,18 +215,64 @@ static void on_idle(void)
 #endif
 }
 
+uint32_t timestamp(void)
+{
+  return DWT->CYCCNT;
+}
+
+#if BOARD_DETECTION
+void pin_to_default(uint8_t pin)
+{
+    if (pin != NRF_QSPI_PIN_NOT_CONNECTED)
+    {
+        nrf_gpio_cfg_default(pin);
+    }
+}
+#endif
+
 /**@brief Main function of the connectivity application. */
 int main(void)
 {
+    
+
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+
     uint32_t err_code = NRF_SUCCESS;
 
-    APP_ERROR_CHECK(NRF_LOG_INIT(NULL));
+    APP_ERROR_CHECK(NRF_LOG_INIT(timestamp, 64000000));
+
 
     NRF_LOG_DEFAULT_BACKENDS_INIT();
 
     NRF_LOG_INFO("BLE connectivity started");
 
-    bsp_board_init(BSP_INIT_LEDS);
+#if BOARD_DETECTION
+    uint32_t pin_reset = PCA10059_PIN_RESET;
+
+    nrf_drv_qspi_config_t config = NRF_DRV_QSPI_DEFAULT_CONFIG;
+
+    //Using qspi memory to de
+    err_code = nrf_drv_qspi_init(&config, NULL, NULL);
+    if (err_code == NRF_SUCCESS)
+    {
+        //qspi memory is present on pca10056
+        pin_reset = PCA10056_PIN_RESET;
+        nrf_drv_qspi_uninit();
+    }
+    else if (err_code == NRF_ERROR_TIMEOUT)
+    {
+        //pca10059 assumed when no qspi memory
+        nrf_drv_qspi_uninit();
+        pin_reset = PCA10059_PIN_RESET;
+        pin_to_default(config.pins.csn_pin);
+        pin_to_default(config.pins.io0_pin);
+        pin_to_default(config.pins.io1_pin);
+        pin_to_default(config.pins.io2_pin);
+        pin_to_default(config.pins.io3_pin);
+        pin_to_default(config.pins.sck_pin);
+    }
+#endif //BOARD_DETECTION
 
 #if (defined(SER_PHY_HCI_DEBUG_ENABLE) || defined(SER_PHY_DEBUG_APP_ENABLE))
     debug_init(NULL);
@@ -206,11 +298,17 @@ int main(void)
     }
 
     nrf_drv_clock_hfclk_request(NULL);
+    nrf_drv_clock_lfclk_request(NULL);
+
     while (!nrf_drv_clock_hfclk_is_running())
     {}
 
 #if defined(APP_USBD_ENABLED) && APP_USBD_ENABLED
     usbd_init();
+#endif
+
+#if BOARD_DETECTION
+        APP_ERROR_CHECK(nrf_dfu_trigger_usb_init(pin_reset));
 #endif
 
     /* Open serialization HAL Transport layer and subscribe for HAL Transport events. */
@@ -234,6 +332,8 @@ int main(void)
     {
         /* Process SoftDevice events. */
         app_sched_execute();
+
+        CRITICAL_REGION_ENTER();
         if (nrf_sdh_is_suspended())
         {
             // Resume pulling new events if queue utilization drops below 50%.
@@ -242,6 +342,7 @@ int main(void)
                 nrf_sdh_resume();
             }
         }
+        CRITICAL_REGION_EXIT();
 
         /* Process received packets.
          * We can NOT add received packets as events to the application scheduler queue because
@@ -251,6 +352,7 @@ int main(void)
         APP_ERROR_CHECK(err_code);
 
         on_idle();
+
     }
 }
 /** @} */

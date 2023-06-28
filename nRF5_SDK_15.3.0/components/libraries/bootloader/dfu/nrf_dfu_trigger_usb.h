@@ -63,11 +63,12 @@
  *
  * @note  If @ref APP_USBD_CONFIG_EVENT_QUEUE_ENABLE is on (1), USB events must be handled manually.
  *        See @ref app_usbd_event_queue_process.
+ * @param pin_reset Pin which is shortened with the actual pin reset.
  *
  * @retval NRF_SUCCESS  On successful initialization.
  * @return An error code on failure, for example if called at a wrong time.
  */
-ret_code_t nrf_dfu_trigger_usb_init(void);
+ret_code_t nrf_dfu_trigger_usb_init(uint32_t pin_reset);
 
 /** @} */
 

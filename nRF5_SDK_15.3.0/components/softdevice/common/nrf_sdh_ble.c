@@ -102,8 +102,9 @@ ret_code_t nrf_sdh_ble_app_ram_start_get(uint32_t * p_app_ram_start)
 
 ret_code_t nrf_sdh_ble_default_cfg_set(uint8_t conn_cfg_tag, uint32_t * p_ram_start)
 {
-    uint32_t ret_code;
 
+#if defined(NRF_SD_BLE_API_VERSION) && NRF_SD_BLE_API_VERSION > 3
+    uint32_t ret_code;
     ret_code = nrf_sdh_ble_app_ram_start_get(p_ram_start);
     if (ret_code != NRF_SUCCESS)
     {
@@ -197,7 +198,7 @@ ret_code_t nrf_sdh_ble_default_cfg_set(uint8_t conn_cfg_tag, uint32_t * p_ram_st
         NRF_LOG_ERROR("sd_ble_cfg_set() returned %s when attempting to set BLE_GATTS_CFG_SERVICE_CHANGED.",
                       nrf_strerror_get(ret_code));
     }
-
+#endif //defined(NRF_SD_BLE_API_VERSION) && NRF_SD_BLE_API_VERSION > 3
     return NRF_SUCCESS;
 }
 
@@ -217,7 +218,7 @@ static uint32_t ram_end_address_get(void)
     return RAM_START + ram_total_size;
 }
 
-
+#if defined(NRF_SD_BLE_API_VERSION) && NRF_SD_BLE_API_VERSION > 4
 ret_code_t nrf_sdh_ble_enable(uint32_t * const p_app_ram_start)
 {
     // Start of RAM, obtained from linker symbol.
@@ -256,7 +257,46 @@ ret_code_t nrf_sdh_ble_enable(uint32_t * const p_app_ram_start)
 
     return ret_code;
 }
+#else
+ret_code_t nrf_sdh_ble_enable(ble_enable_params_t * p_ble_enable_params, uint32_t * const p_app_ram_start)
+{
+    // Start of RAM, obtained from linker symbol.
+    uint32_t const app_ram_start_link = *p_app_ram_start;
 
+    ret_code_t ret_code = sd_ble_enable(p_ble_enable_params, p_app_ram_start);
+    if (*p_app_ram_start > app_ram_start_link)
+    {
+        NRF_LOG_WARNING("Insufficient RAM allocated for the SoftDevice.");
+
+        NRF_LOG_WARNING("Change the RAM start location from 0x%x to 0x%x.",
+                        app_ram_start_link, *p_app_ram_start);
+        NRF_LOG_WARNING("Maximum RAM size for application is 0x%x.",
+                        ram_end_address_get() - (*p_app_ram_start));
+    }
+    else
+    {
+        NRF_LOG_DEBUG("RAM starts at 0x%x", app_ram_start_link);
+        if (*p_app_ram_start != app_ram_start_link)
+        {
+            NRF_LOG_DEBUG("RAM start location can be adjusted to 0x%x.", *p_app_ram_start);
+
+            NRF_LOG_DEBUG("RAM size for application can be adjusted to 0x%x.",
+                          ram_end_address_get() - (*p_app_ram_start));
+        }
+    }
+
+    if (ret_code == NRF_SUCCESS)
+    {
+        m_stack_is_enabled = true;
+    }
+    else
+    {
+        NRF_LOG_ERROR("sd_ble_enable() returned %s.", nrf_strerror_get(ret_code));
+    }
+
+    return ret_code;
+}
+#endif
 
 /**@brief       Function for polling BLE events.
  *
@@ -305,6 +345,12 @@ static void nrf_sdh_ble_evts_poll(void * p_context)
             handler    = p_observer->handler;
 
             handler(p_ble_evt, p_observer->p_context);
+        }
+
+        /* Interrupt processing if sdh got suspended. */
+        if (nrf_sdh_is_suspended()) {
+	     ret_code = NRF_ERROR_NOT_FOUND;
+             break;
         }
     }
 

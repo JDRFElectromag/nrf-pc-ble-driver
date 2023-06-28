@@ -124,6 +124,8 @@ uint32_t conn_ble_gap_ble_data_buf_free(uint8_t * p_data);
 void conn_ble_gap_scan_data_set(uint8_t * p_scan_data);
 void conn_ble_gap_scan_data_unset(bool free);
 
+void conn_ble_gap_set_adv_data_set(uint8_t adv_handle, uint8_t * buf1, uint8_t * buf2);
+
 #ifdef __cplusplus
 }
 #endif

@@ -79,6 +79,8 @@ extern "C" {
 /** Maximum number of events in the application scheduler queue. */
 #ifdef S112
 #define SER_CONN_SCHED_QUEUE_SIZE             8u
+#elif defined(SER_PHY_HCI_USB_CDC)
+#define SER_CONN_SCHED_QUEUE_SIZE             64u
 #else
 #define SER_CONN_SCHED_QUEUE_SIZE             16u
 #endif

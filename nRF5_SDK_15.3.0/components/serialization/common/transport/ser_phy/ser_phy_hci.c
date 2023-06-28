@@ -1672,7 +1672,7 @@ void ser_phy_hci_reset(void)
 {
     m_p_tx_payload = NULL;
     m_p_rx_buffer = NULL;
-    
+
     nrf_queue_reset(&m_tx_evt_queue);
     nrf_queue_reset(&m_rx_evt_queue);
 

@@ -43,17 +43,31 @@
 #include "nordic_common.h"
 #include <stddef.h>
 
+typedef enum {
+    BLE_DATA_BUF_FREE,
+    BLE_DATA_BUF_IN_USE,
+    BLE_DATA_BUF_LAST_DIRTY,
+} ble_data_buf_state_t;
+
 ser_ble_gap_conn_keyset_t m_conn_keys_table[SER_MAX_CONNECTIONS];
 #if NRF_SD_BLE_API_VERSION >= 6
 
 typedef struct
 {
+    ble_data_buf_state_t state;
     uint32_t id;
     uint8_t  ble_data[SER_MAX_ADV_DATA];
 } ble_data_item_t;
 
-ble_data_item_t m_ble_data_pool[8];
+typedef struct
+{
+    uint8_t * buf1;
+    uint8_t * buf2;
+} adv_set_data_t;
 
+static adv_set_data_t adv_set_data[BLE_GAP_ADV_SET_COUNT_MAX];
+
+ble_data_item_t m_ble_data_pool[8];
 static uint8_t * mp_scan_data;
 
 #endif
@@ -68,6 +82,7 @@ void conn_ble_gap_sec_keys_init(void)
 #if NRF_SD_BLE_API_VERSION >= 6
     for (i = 0; i < 8; i++)
     {
+        m_ble_data_pool[i].state = BLE_DATA_BUF_FREE;
         m_ble_data_pool[i].id = 0;
     }
 #endif
@@ -75,21 +90,21 @@ void conn_ble_gap_sec_keys_init(void)
 
 uint32_t conn_ble_gap_sec_context_create(uint32_t *p_index)
 {
-  uint32_t err_code = NRF_ERROR_NO_MEM;
-  uint32_t i;
+    uint32_t err_code = NRF_ERROR_NO_MEM;
+    uint32_t i;
 
-  for (i=0; i<SER_MAX_CONNECTIONS; i++ )
-  {
-    if ( ! m_conn_keys_table[i].conn_active )
+    for (i=0; i<SER_MAX_CONNECTIONS; i++)
     {
-        m_conn_keys_table[i].conn_active = 1;
-        *p_index = i;
-        err_code = NRF_SUCCESS;
-        break;
+        if (!m_conn_keys_table[i].conn_active)
+        {
+            m_conn_keys_table[i].conn_active = 1;
+            *p_index = i;
+            err_code = NRF_SUCCESS;
+            break;
+        }
     }
-  }
 
-  return err_code;
+    return err_code;
 }
 
 uint32_t conn_ble_gap_sec_context_destroy(uint16_t conn_handle)
@@ -117,7 +132,7 @@ uint32_t conn_ble_gap_sec_context_find(uint16_t conn_handle, uint32_t *p_index)
 
   for (i=0; i<SER_MAX_CONNECTIONS; i++ )
   {
-    if ( (m_conn_keys_table[i].conn_handle == conn_handle) && (m_conn_keys_table[i].conn_active == 1) )
+    if ((m_conn_keys_table[i].conn_handle == conn_handle) && (m_conn_keys_table[i].conn_active == 1))
     {
         *p_index = i;
         err_code = NRF_SUCCESS;
@@ -149,8 +164,9 @@ uint8_t * conn_ble_gap_ble_data_buf_alloc(uint32_t id)
 
     for (i = 0; i < ARRAY_SIZE(m_ble_data_pool); i++)
     {
-        if (m_ble_data_pool[i].id == 0)
+        if (m_ble_data_pool[i].state == BLE_DATA_BUF_FREE)
         {
+            m_ble_data_pool[i].state = BLE_DATA_BUF_IN_USE;
             m_ble_data_pool[i].id = id;
             return m_ble_data_pool[i].ble_data;
         }
@@ -175,6 +191,7 @@ uint32_t conn_ble_gap_ble_data_buf_free(uint8_t * p_data)
         {
             uint32_t id = m_ble_data_pool[i].id;
             m_ble_data_pool[i].id = 0;
+            m_ble_data_pool[i].state = BLE_DATA_BUF_FREE;
             return id;
         }
     }
@@ -182,21 +199,66 @@ uint32_t conn_ble_gap_ble_data_buf_free(uint8_t * p_data)
     return 0;
 }
 
+void conn_ble_gap_ble_data_mark_dirty(uint8_t * p_data)
+{
+    uint32_t i;
+
+    if (p_data)
+    {
+        for (i = 0; i < ARRAY_SIZE(m_ble_data_pool); i++)
+        {
+            if (m_ble_data_pool[i].ble_data == p_data)
+            {
+                m_ble_data_pool[i].state = BLE_DATA_BUF_LAST_DIRTY;
+            }
+        }
+    }
+}
+
+void conn_ble_gap_ble_adv_data_mark_dirty(uint8_t * p_data1, uint8_t *p_data2)
+{
+    uint32_t i;
+
+    /* First find if given id already allocated the buffer. */
+    for (i = 0; i < ARRAY_SIZE(m_ble_data_pool); i++)
+    {
+        if (m_ble_data_pool[i].state == BLE_DATA_BUF_LAST_DIRTY)
+        {
+            conn_ble_gap_ble_data_buf_free(m_ble_data_pool[i].ble_data);
+        }
+    }
+
+    conn_ble_gap_ble_data_mark_dirty(p_data1);
+    conn_ble_gap_ble_data_mark_dirty(p_data2);
+}
+
 void conn_ble_gap_scan_data_set(uint8_t * p_scan_data)
 {
-    mp_scan_data = p_scan_data;
+	mp_scan_data = p_scan_data;
 }
 
 void conn_ble_gap_scan_data_unset(bool free)
 {
-    if (mp_scan_data)
+	if (mp_scan_data)
+	{
+		if (free)
+		{
+			conn_ble_gap_ble_data_buf_free(mp_scan_data);
+		}
+		mp_scan_data = NULL;
+	}
+}
+
+void conn_ble_gap_set_adv_data_set(uint8_t adv_handle, uint8_t * buf1, uint8_t * buf2)
+{
+    if (adv_handle == BLE_GAP_ADV_SET_HANDLE_NOT_SET)
     {
-        if (free)
-        {
-            (void)conn_ble_gap_ble_data_buf_free(mp_scan_data);
-        }
-        mp_scan_data = NULL;
+        adv_handle = BLE_GAP_ADV_SET_COUNT_MAX - 1;
     }
+    conn_ble_gap_ble_adv_data_mark_dirty(adv_set_data[adv_handle].buf1, adv_set_data[adv_handle].buf2);
+
+    adv_set_data[adv_handle].buf1 = buf1;
+    adv_set_data[adv_handle].buf2 = buf2;
 }
 #endif
 

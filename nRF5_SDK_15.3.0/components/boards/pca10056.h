@@ -90,6 +90,8 @@ extern "C" {
 #define RTS_PIN_NUMBER 5
 #define HWFC           true
 
+#define BSP_SELF_PINRESET_PIN NRF_GPIO_PIN_MAP(0,24)
+
 #define BSP_QSPI_SCK_PIN   19
 #define BSP_QSPI_CSN_PIN   17
 #define BSP_QSPI_IO0_PIN   20

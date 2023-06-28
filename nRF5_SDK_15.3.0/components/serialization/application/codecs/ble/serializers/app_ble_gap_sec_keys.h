@@ -112,6 +112,7 @@ void app_ble_gap_adv_buf_addr_unregister(void * p_buf, bool event_context);
 void app_ble_gap_scan_data_set(uint8_t * p_scan_data);
 void app_ble_gap_scan_data_unset(bool free);
 
+void app_ble_gap_set_adv_data_set(uint8_t adv_handle, uint8_t * buf1, uint8_t * buf2);
 #endif
 #ifdef __cplusplus
 }

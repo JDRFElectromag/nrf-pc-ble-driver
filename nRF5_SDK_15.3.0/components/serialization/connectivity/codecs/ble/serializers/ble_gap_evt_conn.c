@@ -318,7 +318,7 @@ uint32_t ble_gap_evt_timeout_enc(ble_evt_t const * const p_event,
 #if defined(NRF_SD_BLE_API_VERSION) && NRF_SD_BLE_API_VERSION > 5 && !defined(S112)
     if (p_event->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_SCAN)
     {
-        SER_PUSH_FIELD(&p_event->evt.gap_evt.params.timeout.params.adv_report_buffer, ble_data_t_enc);
+        SER_PUSH_FIELD(&p_event->evt.gap_evt.params.timeout.params.adv_report_buffer, ble_data_t_empty_enc);
     }
 #endif
     SER_EVT_ENC_END;

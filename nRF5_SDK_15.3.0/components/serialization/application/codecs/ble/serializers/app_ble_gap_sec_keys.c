@@ -55,21 +55,52 @@ typedef struct {
 
 static adv_set_t m_adv_sets[4]; //todo configurable number of adv sets.
 
+typedef struct
+{
+    uint8_t adv_handle;
+    uint8_t * buf1;
+    uint8_t * buf2;
+} adv_set_data_t;
+
+typedef enum {
+    BLE_DATA_BUF_FREE,
+    BLE_DATA_BUF_IN_USE,
+    BLE_DATA_BUF_LAST_DIRTY,
+} ble_data_buf_state_t;
+
+static adv_set_data_t adv_set_data[BLE_GAP_ADV_SET_COUNT_MAX];
+
 static ble_data_t m_scan_data = {0};
 static int scan_data_id;
 #endif
 ser_ble_gap_app_keyset_t m_app_keys_table[SER_MAX_CONNECTIONS];
 
 #if NRF_SD_BLE_API_VERSION >= 6
-static void *m_ble_gap_adv_buf_addr_storage[8];
+
+typedef struct
+{
+    ble_data_buf_state_t state;
+    uint32_t id;
+    void *buf;
+} ble_data_item_t;
+
+ble_data_item_t m_ble_data_pool[8];
+
 #endif
 
 void app_ble_gap_sec_keys_init(void)
 {
 #if NRF_SD_BLE_API_VERSION >= 6
-    memset(m_ble_gap_adv_buf_addr_storage, 0, sizeof(m_ble_gap_adv_buf_addr_storage));
+    uint32_t i;
+
+    memset(m_ble_data_pool, 0, sizeof(m_ble_data_pool));
     memset(&m_scan_data, 0, sizeof(m_scan_data));
     memset(m_adv_sets, 0, sizeof(m_adv_sets));
+    for (i = 0; i < 8; i++)
+    {
+        m_ble_data_pool[i].state = BLE_DATA_BUF_FREE;
+        m_ble_data_pool[i].id = 0;
+    }
 #endif
     memset(m_app_keys_table, 0, sizeof(m_app_keys_table));
 }
@@ -140,12 +171,13 @@ int app_ble_gap_adv_buf_register(void * p_buf)
         return 0;
     }
 
-    for (i = 0; i < ARRAY_SIZE(m_ble_gap_adv_buf_addr_storage); i++)
+    for (i = 0; i < ARRAY_SIZE(m_ble_data_pool); i++)
     {
-        if ((m_ble_gap_adv_buf_addr_storage[i] == NULL) ||
-            (m_ble_gap_adv_buf_addr_storage[i] == p_buf))
+        if (m_ble_data_pool[i].state == BLE_DATA_BUF_FREE)
         {
-            m_ble_gap_adv_buf_addr_storage[i] = p_buf;
+            m_ble_data_pool[i].buf = p_buf;
+            m_ble_data_pool[i].id = i + 1;
+            m_ble_data_pool[i].state = BLE_DATA_BUF_IN_USE;
             return i+1;
         }
     }
@@ -161,10 +193,9 @@ void *app_ble_gap_adv_buf_unregister(int id, bool event_context)
         return NULL;
     }
 
-    void * ret = m_ble_gap_adv_buf_addr_storage[id-1];
-    m_ble_gap_adv_buf_addr_storage[id-1] = NULL;
+    m_ble_data_pool[id].state = BLE_DATA_BUF_FREE;
 
-    return ret;
+    return m_ble_data_pool[id].id;
 }
 
 void app_ble_gap_adv_buf_addr_unregister(void * p_buf, bool event_context)
@@ -177,22 +208,24 @@ void app_ble_gap_adv_buf_addr_unregister(void * p_buf, bool event_context)
         return;
     }
 
-    for (i = 0; i < ARRAY_SIZE(m_ble_gap_adv_buf_addr_storage); i++)
+    for (i = 0; i < ARRAY_SIZE(m_ble_data_pool); i++)
     {
-        if (m_ble_gap_adv_buf_addr_storage[i] == p_buf)
+        if (m_ble_data_pool[i].buf == p_buf && (m_ble_data_pool[i].state == BLE_DATA_BUF_IN_USE))
         {
-            m_ble_gap_adv_buf_addr_storage[i] = NULL;
+            m_ble_data_pool[id].state = BLE_DATA_BUF_FREE;
+            m_ble_data_pool[id].buf = 0;
         }
     }
 }
 
 void app_ble_gap_scan_data_set(uint8_t * p_scan_data)
 {
+
     uint32_t i;
 
-    for (i = 0; i < ARRAY_SIZE(m_ble_gap_adv_buf_addr_storage); i++)
+    for (i = 0; i < ARRAY_SIZE(m_ble_data_pool); i++)
     {
-        if (m_ble_gap_adv_buf_addr_storage[i] == p_scan_data)
+        if (m_ble_data_pool[i].buf == p_scan_data)
         {
             scan_data_id = i+1;
             return;
@@ -213,4 +246,47 @@ void app_ble_gap_scan_data_unset(bool free)
     }
 }
 
+static void app_ble_gap_ble_data_mark_dirty(uint8_t * p_data)
+{
+    uint32_t i;
+
+    if (p_data)
+    {
+        for (i = 0; i < ARRAY_SIZE(m_ble_data_pool); i++)
+        {
+            if (m_ble_data_pool[i].buf == p_data)
+            {
+                m_ble_data_pool[i].state = BLE_DATA_BUF_LAST_DIRTY;
+            }
+        }
+    }
+}
+static void app_ble_gap_ble_adv_data_mark_dirty(uint8_t * p_data1, uint8_t *p_data2)
+{
+    uint32_t i;
+
+    /* First find if given id already allocated the buffer. */
+    for (i = 0; i < ARRAY_SIZE(m_ble_data_pool); i++)
+    {
+        if (m_ble_data_pool[i].state == BLE_DATA_BUF_LAST_DIRTY)
+        {
+            app_ble_gap_adv_buf_unregister(i+1);
+        }
+    }
+
+    app_ble_gap_ble_data_mark_dirty(p_data1);
+    app_ble_gap_ble_data_mark_dirty(p_data2);
+}
+
+void app_ble_gap_set_adv_data_set(uint8_t adv_handle, uint8_t * buf1, uint8_t * buf2)
+{
+    if (adv_handle == BLE_GAP_ADV_SET_HANDLE_NOT_SET)
+    {
+        adv_handle = BLE_GAP_ADV_SET_COUNT_MAX - 1;
+    }
+    app_ble_gap_ble_adv_data_mark_dirty(adv_set_data[adv_handle].buf1, adv_set_data[adv_handle].buf2);
+
+    adv_set_data[adv_handle].buf1 = buf1;
+    adv_set_data[adv_handle].buf2 = buf2;
+}
 #endif /* NRF_SD_BLE_API_VERSION >= 6 */

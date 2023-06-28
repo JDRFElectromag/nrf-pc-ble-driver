@@ -28,8 +28,8 @@
       linker_printf_fmt_level="long"
       linker_scanf_fmt_level="long"
       linker_section_placement_file="flash_placement.xml"
-      linker_section_placement_macros="FLASH_PH_START=0x0;FLASH_PH_SIZE=0x80000;RAM_PH_START=0x20000000;RAM_PH_SIZE=0x10000;FLASH_START=0x26000;FLASH_SIZE=0x5a000;RAM_START=0x2000a8a8;RAM_SIZE=0x5758"
-      linker_section_placements_segments="FLASH RX 0x0 0x80000;RAM RWX 0x20000000 0x10000"
+      linker_section_placement_macros="FLASH_PH_START=0x0;FLASH_PH_SIZE=0x80000;RAM_PH_START=0x20000000;RAM_PH_SIZE=0x10000;FLASH_START=0x26000;FLASH_SIZE=0x5a000;RAM_START=0x2000ab20;RAM_SIZE=0x54e0"
+      linker_section_placements_segments="FLASH RX 0x0 0x80000;RAM RWX 0x20000000 0x10000;connectivity_version_info RX 0x50000 0x18"
       project_directory=""
       project_type="Executable" />
       <folder Name="Segger Startup Files">

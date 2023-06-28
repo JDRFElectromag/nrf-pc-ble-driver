@@ -62,6 +62,12 @@
 extern "C" {
 #endif
 
+#ifndef BLE_EVT_LEN_MAX
+#define BLE_EVT_LEN_MAX(ATT_MTU) ( \
+    offsetof(ble_evt_t, evt.gattc_evt.params.prim_srvc_disc_rsp.services) + ((ATT_MTU) - 1) / 4 * sizeof(ble_gattc_service_t) \
+)
+
+#endif
 /** @brief  Size of the buffer for a BLE event. */
 #define NRF_SDH_BLE_EVT_BUF_SIZE BLE_EVT_LEN_MAX(NRF_SDH_BLE_GATT_MAX_MTU_SIZE)
 
@@ -172,8 +178,11 @@ ret_code_t nrf_sdh_ble_default_cfg_set(uint8_t conn_cfg_tag, uint32_t * p_ram_st
  *
  * @param[in]   p_app_ram_start     Address of the start of application's RAM.
  */
+#if defined(NRF_SD_BLE_API_VERSION) && NRF_SD_BLE_API_VERSION > 4
 ret_code_t nrf_sdh_ble_enable(uint32_t * p_app_ram_start);
-
+#else
+ret_code_t nrf_sdh_ble_enable(ble_enable_params_t * p_ble_enable_params, uint32_t * p_app_ram_start);
+#endif
 
 #ifdef __cplusplus
 }

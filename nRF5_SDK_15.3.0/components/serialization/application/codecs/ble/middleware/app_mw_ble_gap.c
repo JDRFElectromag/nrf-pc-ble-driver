@@ -1907,8 +1907,8 @@ static uint32_t gap_adv_set_configure_rsp_dec(const uint8_t * p_buffer, uint16_t
 
     if (result_code != NRF_SUCCESS)
     {
-    	app_ble_gap_adv_buf_addr_unregister(mp_out_params[0], false);
-    	app_ble_gap_adv_buf_addr_unregister(mp_out_params[1], false);
+        app_ble_gap_adv_buf_addr_unregister(mp_out_params[0], false);
+        app_ble_gap_adv_buf_addr_unregister(mp_out_params[1], false);
     }
 
     //@note: Should never fail.
@@ -1928,7 +1928,7 @@ uint32_t _sd_ble_gap_adv_set_configure(uint8_t *p_adv_handle,
 {
     uint8_t * p_buffer;
     uint32_t  buffer_length = 0;
-
+    uint32_t err;
     tx_buf_alloc(&p_buffer, (uint16_t *)&buffer_length);
 
     if (p_adv_handle)
@@ -1948,9 +1948,16 @@ uint32_t _sd_ble_gap_adv_set_configure(uint8_t *p_adv_handle,
     APP_ERROR_CHECK(err_code);
 
     //@note: Increment buffer length as internally managed packet type field must be included.
-    return ser_sd_transport_cmd_write(p_buffer,
+    err = ser_sd_transport_cmd_write(p_buffer,
                                       (++buffer_length),
                                       gap_adv_set_configure_rsp_dec);
+
+    if (err == NRF_SUCCESS && p_adv_data)
+    {
+        app_ble_gap_set_adv_data_set(*p_adv_handle, mp_out_params[0], mp_out_params[1]);
+    }
+
+    return err;
 }
 
 #ifndef S112

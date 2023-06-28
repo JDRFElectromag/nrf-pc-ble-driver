@@ -69,10 +69,10 @@ extern "C" {
 /* UART configuration */
 #define UART_IRQ_PRIORITY                       APP_IRQ_PRIORITY_LOWEST
 
-#define SER_PHY_UART_RX                         SER_CON_RX_PIN
-#define SER_PHY_UART_TX                         SER_CON_TX_PIN
-#define SER_PHY_UART_CTS                        SER_CON_CTS_PIN
-#define SER_PHY_UART_RTS                        SER_CON_RTS_PIN
+#define SER_PHY_UART_RX                         RX_PIN_NUMBER//SER_CON_RX_PIN
+#define SER_PHY_UART_TX                         TX_PIN_NUMBER//SER_CON_TX_PIN
+#define SER_PHY_UART_CTS                        CTS_PIN_NUMBER//SER_CON_CTS_PIN
+#define SER_PHY_UART_RTS                        RTS_PIN_NUMBER//SER_CON_RTS_PIN
 
 
 #ifdef __cplusplus

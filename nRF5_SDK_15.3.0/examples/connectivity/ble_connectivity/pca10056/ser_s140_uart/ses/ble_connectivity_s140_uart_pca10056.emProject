@@ -29,7 +29,7 @@
       linker_scanf_fmt_level="long"
       linker_section_placement_file="flash_placement.xml"
       linker_section_placement_macros="FLASH_PH_START=0x0;FLASH_PH_SIZE=0x100000;RAM_PH_START=0x20000000;RAM_PH_SIZE=0x40000;FLASH_START=0x26000;FLASH_SIZE=0xda000;RAM_START=0x2001ad58;RAM_SIZE=0x252a8"
-      linker_section_placements_segments="FLASH RX 0x0 0x100000;RAM RWX 0x20000000 0x40000"
+      linker_section_placements_segments="FLASH RX 0x0 0x100000;RAM RWX 0x20000000 0x40000;connectivity_version_info RX 0x50000 0x18"
       project_directory=""
       project_type="Executable" />
       <folder Name="Segger Startup Files">
@@ -122,6 +122,7 @@
       <file file_name="../../../../../../modules/nrfx/soc/nrfx_atomic.c" />
       <file file_name="../../../../../../modules/nrfx/drivers/src/nrfx_clock.c" />
       <file file_name="../../../../../../modules/nrfx/drivers/src/prs/nrfx_prs.c" />
+      <file file_name="../../../../../../modules/nrfx/drivers/src/nrfx_qspi.c" />
       <file file_name="../../../../../../modules/nrfx/drivers/src/nrfx_uart.c" />
       <file file_name="../../../../../../modules/nrfx/drivers/src/nrfx_uarte.c" />
     </folder>

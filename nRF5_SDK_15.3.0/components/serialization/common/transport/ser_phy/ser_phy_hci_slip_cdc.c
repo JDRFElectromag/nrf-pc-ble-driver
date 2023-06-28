@@ -67,10 +67,10 @@ NRF_LOG_MODULE_REGISTER();
 static void cdc_acm_user_ev_handler(app_usbd_class_inst_t const * p_inst,
                                     app_usbd_cdc_acm_user_event_t event);
 
-#define CDC_ACM_COMM_INTERFACE  0
+#define CDC_ACM_COMM_INTERFACE  1
 #define CDC_ACM_COMM_EPIN       NRF_DRV_USBD_EPIN2
 
-#define CDC_ACM_DATA_INTERFACE  1
+#define CDC_ACM_DATA_INTERFACE  2
 #define CDC_ACM_DATA_EPIN       NRF_DRV_USBD_EPIN1
 #define CDC_ACM_DATA_EPOUT      NRF_DRV_USBD_EPOUT1
 

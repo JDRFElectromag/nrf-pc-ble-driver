@@ -1249,6 +1249,12 @@ uint32_t conn_mw_ble_gap_adv_set_configure(uint8_t const * const p_rx_buf,
        (void)conn_ble_gap_ble_data_buf_free(p_adv_data->adv_data.p_data);
        (void)conn_ble_gap_ble_data_buf_free(p_adv_data->scan_rsp_data.p_data);
    }
+   else
+   {
+       conn_ble_gap_set_adv_data_set(*p_adv_handle,
+                                     p_adv_data->adv_data.p_data,
+                                     p_adv_data->scan_rsp_data.p_data);
+   }
 
    err_code = ble_gap_adv_set_configure_rsp_enc(sd_err_code, p_tx_buf, p_tx_buf_len, p_adv_data, p_adv_handle);
    SER_ASSERT(err_code == NRF_SUCCESS, err_code);

@@ -25,6 +25,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/usbd/app_usbd.c \
   $(SDK_ROOT)/components/libraries/usbd/class/cdc/acm/app_usbd_cdc_acm.c \
   $(SDK_ROOT)/components/libraries/usbd/app_usbd_core.c \
+  $(SDK_ROOT)/components/libraries/usbd/class/nrf_dfu_trigger/app_usbd_nrf_dfu_trigger.c \
   $(SDK_ROOT)/components/libraries/usbd/app_usbd_serial_num.c \
   $(SDK_ROOT)/components/libraries/usbd/app_usbd_string_desc.c \
   $(SDK_ROOT)/components/libraries/util/app_util_platform.c \
@@ -44,6 +45,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/strerror/nrf_strerror.c \
   $(SDK_ROOT)/modules/nrfx/mdk/system_nrf52840.c \
   $(SDK_ROOT)/components/boards/boards.c \
+  $(SDK_ROOT)/components/libraries/bootloader/dfu/nrf_dfu_trigger_usb.c \
   $(SDK_ROOT)/components/serialization/connectivity/codecs/ble/serializers/ble_conn.c \
   $(SDK_ROOT)/components/serialization/connectivity/codecs/common/ble_dtm_init.c \
   $(SDK_ROOT)/components/serialization/connectivity/codecs/ble/serializers/ble_event_enc.c \
@@ -95,6 +97,7 @@ SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_clock.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_power.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/prs/nrfx_prs.c \
+  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_qspi.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_systick.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_uart.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_uarte.c \
@@ -126,7 +129,7 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/serialization/connectivity/codecs/ble/middleware \
   $(SDK_ROOT)/integration/nrfx/legacy \
   $(SDK_ROOT)/components/libraries/crc16 \
-  $(SDK_ROOT)/components/ble/ble_dtm \
+  $(SDK_ROOT)/components/libraries/bootloader/dfu \
   $(SDK_ROOT)/components/serialization/common \
   $(SDK_ROOT)/components/libraries/util \
   $(SDK_ROOT)/components/libraries/usbd/class/cdc/acm \
@@ -134,6 +137,7 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/usbd/class/cdc \
   $(SDK_ROOT)/components/serialization/common/transport/ser_phy/config \
   $(SDK_ROOT)/components/libraries/balloc \
+  $(SDK_ROOT)/components/ble/ble_dtm \
   $(SDK_ROOT)/components/libraries/ringbuf \
   $(SDK_ROOT)/modules/nrfx/hal \
   $(SDK_ROOT)/components/libraries/bsp \
@@ -153,11 +157,13 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/memobj \
   $(SDK_ROOT)/components/serialization/common/struct_ser/ble \
   $(SDK_ROOT)/integration/nrfx \
+  $(SDK_ROOT)/components/libraries/usbd/class/nrf_dfu_trigger \
   $(SDK_ROOT)/components/serialization/common/transport \
   $(SDK_ROOT)/components/libraries/timer/experimental \
   $(SDK_ROOT)/components/softdevice/common \
   $(SDK_ROOT)/components/softdevice/s140/headers/nrf52 \
   $(SDK_ROOT)/modules/nrfx/drivers/include \
+  $(SDK_ROOT)/components/libraries/block_dev \
   $(SDK_ROOT)/external/fprintf \
   $(SDK_ROOT)/components/libraries/log/src \
 

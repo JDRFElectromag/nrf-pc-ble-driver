@@ -108,7 +108,7 @@ void ser_conn_ble_event_encoder(void * p_event_data, uint16_t event_size)
          * scheduler queue. In result the next event reserves the TX buffer before the current
          * packet is sent. If in meantime a command arrives a command response cannot be sent in
          * result. Pausing the scheduler temporary prevents processing a next event. */
-        if (!m_reset_ongoing) 
+        if (!m_reset_ongoing)
         {
             app_sched_pause();
         }

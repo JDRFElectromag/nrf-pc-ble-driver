@@ -233,9 +233,9 @@ static void tx_buf_fill(void)
             return;
 
         default:
+            ASSERT(mp_tx_data->p_buffer != NULL);
             if (m_tx_index < mp_tx_data->num_of_bytes)
             {
-                ASSERT(mp_tx_data->p_buffer != NULL);
                 uint8_t data = mp_tx_data->p_buffer[m_tx_index];
 
                 if (data == APP_SLIP_END)

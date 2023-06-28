@@ -204,7 +204,11 @@ ret_code_t nrf_sdh_enable_request(void)
         .source       = NRF_SDH_CLOCK_LF_SRC,
         .rc_ctiv      = NRF_SDH_CLOCK_LF_RC_CTIV,
         .rc_temp_ctiv = NRF_SDH_CLOCK_LF_RC_TEMP_CTIV,
+#if defined(NRF_SD_BLE_API_VERSION) && NRF_SD_BLE_API_VERSION > 3
         .accuracy     = NRF_SDH_CLOCK_LF_ACCURACY
+#else
+        .xtal_accuracy     = NRF_SDH_CLOCK_LF_ACCURACY
+#endif
     };
 
     CRITICAL_REGION_ENTER();
@@ -224,6 +228,13 @@ ret_code_t nrf_sdh_enable_request(void)
     m_nrf_sdh_continue  = false;
     m_nrf_sdh_suspended = false;
 
+#ifdef SOFTDEVICE_PRESENT
+    ret_code = sd_nvic_ClearPendingIRQ((IRQn_Type)SD_EVT_IRQn);
+    APP_ERROR_CHECK(ret_code);
+#else
+    // In case of serialization, NVIC must be accessed directly.
+    NVIC_ClearPendingIRQ((IRQn_Type)SD_EVT_IRQn);
+#endif
     // Enable event interrupt.
     // Interrupt priority has already been set by the stack.
     softdevices_evt_irq_enable();
